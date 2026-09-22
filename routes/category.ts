@@ -12,10 +12,12 @@ import checkAuthentication from "../middlewares/checkAuthentication"
 import checkAdmin from "../middlewares/checkAdmin";
 
 const router = express.Router();
-
 router.get("/", getCategories);
-router.post("/", checkAuthentication, checkAdmin, storeCategory);
+
+router.post("/", checkAuthentication, storeCategory);
+
 router.put("/:id", checkAuthentication, checkAdmin, updateCategory);
+
 router.delete("/:id", checkAuthentication, checkAdmin, deleteCategory);
 
 // module.exports = router;

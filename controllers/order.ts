@@ -14,7 +14,7 @@ import Cart from "../models/Cart";
 import sequelize from "../connections/database";
 
 const getOrders = async (req: Request, res: Response) => {
-  let orders = await Order.findAll({}); // select * from orders
+  let orders = await Order.findAll({});
   res.send({
     data: orders,
   });
@@ -28,12 +28,7 @@ const storeOrder = async (req: Request, res: Response) => {
     let totalShippingCharge = 0;
     let totalProductPrice = 0;
     const realMonth = date.getMonth() + 1;
-    let orderNo =
-      "DRZ-" +
-      realMonth +
-      "-" +
-      Date.now() +
-      Math.floor(Math.random() * 1000000);
+    let orderNo = `DRZ-${realMonth}-${Date.now()}`;
 
     let order = await Order.create(
       {
@@ -47,7 +42,6 @@ const storeOrder = async (req: Request, res: Response) => {
     );
 
     let products = req.body.products;
-    // console.log(products);
 
     let cartPoducts = await Cart.findAll({
       where: {
@@ -72,7 +66,6 @@ const storeOrder = async (req: Request, res: Response) => {
       },
     });
 
-    // sellers.forEach(async (seller) => {
     for (const seller of sellers) {
       let subOrder = await SubOrder.create(
         {
@@ -85,7 +78,6 @@ const storeOrder = async (req: Request, res: Response) => {
 
       totalShippingCharge += seller.getDataValue("shippingCharge");
 
-      // seller.products.forEach(async (product) => {
       for (const product of seller.getDataValue("products")) {
         let productQty =
           cartPoducts
@@ -95,7 +87,6 @@ const storeOrder = async (req: Request, res: Response) => {
             )
             ?.getDataValue("quantity") ?? 0;
         await OrderItem.create(
-          // await OrderItem.bulkCreate(
           {
             subOrderId: subOrder.getDataValue("id"),
             productId: product.getDataValue("id"),
@@ -131,7 +122,7 @@ const storeOrder = async (req: Request, res: Response) => {
         product_code: productCode,
         product_service_charge: 0,
         product_delivery_charge: 0,
-        succeess_url: "http://localhost:5173/order-success",
+         success_url: "http://localhost:5173/order-success",
         failure_url: "http://localhost:5173/order-failture",
         signed_field_names: "total_amount,transaction_uuid,product_code",
         signature: signature,
@@ -146,8 +137,12 @@ const storeOrder = async (req: Request, res: Response) => {
     });
   } catch (err) {
     await t.rollback();
+
+    console.error("STORE ORDER ERROR:", err);
+
     res.status(500).send({
       msg: "SERVER error",
+      error: err instanceof Error ? err.message : err,
     });
   }
 };
@@ -155,42 +150,16 @@ const storeOrder = async (req: Request, res: Response) => {
 const updateOrder = async (req: Request, res: Response) => {
   res.send("orders updated");
   return;
-  // zoi validation
-  console.log(req.params.id);
-
-  const cart = await Order.update(
-    {
-      title: req.body.title,
-      price: req.body.price,
-    },
-    {
-      where: {
-        id: req.params.id,
-      },
-    },
-  );
-
-  res.send("cart update");
 };
 
 const deleteOrder = async (req: Request, res: Response) => {
   res.send("orders deleted");
   return;
-  const cart = await Order.destroy({
-    where: {
-      id: req.params.id,
-    },
-  });
-
-  res.send("cart deleted");
 };
 
 const verifyOrder = async (req: Request, res: Response) => {
   const base64 = req.query.token as string;
-  // Decode Base64
   const decodedString = Buffer.from(base64, "base64").toString("utf8");
-
-  // Parse JSON
   const data = JSON.parse(decodedString);
 
   let response = await axios.get(
@@ -213,5 +182,4 @@ const verifyOrder = async (req: Request, res: Response) => {
   res.send("success");
 };
 
-// named export
 export { getOrders, storeOrder, updateOrder, deleteOrder, verifyOrder };

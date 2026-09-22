@@ -1,45 +1,47 @@
-// require("dotenv").config();
-import 'dotenv/config'
-// const express = require("express");
-import express, { Request,Response,NextFunction } from "express"
 
+import "dotenv/config";
+import cors from "cors";
+import express, { Request, Response, NextFunction } from "express";
 
-
-// require("./models/index");
-import ("./models/index.js")
+import "./models/index.js";
 
 import sequelize from "./connections/database";
+
+import authRoutes from "./routes/auth";
+import cartRoutes from "./routes/cart";
+import categoryRoutes from "./routes/category";
+import productRoutes from "./routes/product";
+import OrderRoutes from "./routes/order";
+
 const app = express();
 const port = 4000;
 
 
-// const authRoutes = require("./routes/auth");
-import authRoutes from "./routes/auth"
-import cartRoutes from "./routes/cart"
-import categoryRoutes from "./routes/category"
-import productRoutes from "./routes/product"
-import OrderRoutes from "./routes/order"
+// CORS
+app.use(cors());
 
-
-// cors
-
-app.use(express.json()); // global middleware : applicable to all api routes |  to read data from req.body
-// app.use(checkAuthentication) // global middelware
+app.use(express.json());
 
 app.use("/uploads", express.static("uploads"));
 
-const middleware1 = (_req: Request, _res:Response, next:NextFunction) => {
+const middleware1 = (
+  _req: Request,
+  _res: Response,
+  next: NextFunction,
+) => {
   console.log("middelware1");
-  next(); //netx valid middeleware in line
+  next();
 };
 
-const middleware2 = (req: Request, res:Response, next:NextFunction) => {
+const middleware2 = (
+  _req: Request,
+  _res: Response,
+  next: NextFunction,
+) => {
   console.log("middelware2");
   next();
 };
 
-// app.use(middleware1); // global middleware
-// app.use(middleware2); // global middleware
 app.use(authRoutes);
 app.use(productRoutes);
 app.use("/api/carts", cartRoutes);
@@ -53,8 +55,9 @@ app.get("/api", middleware2, middleware1, (req, res) => {
 const checkDbConnection = async () => {
   try {
     await sequelize.authenticate();
-    // await sequelize.sync({ force: true }); // NOTE: this will remove all the datas from database
+
     await sequelize.sync({ alter: true });
+
     console.log("DB Connection has been established successfully.");
   } catch (error) {
     console.error("Unable to connect to the database:", error);
@@ -64,6 +67,8 @@ const checkDbConnection = async () => {
 app.listen(port, () => {
   console.log(`Example app listening on port ${port}`);
 });
+
 checkDbConnection();
 
 export default app;
+

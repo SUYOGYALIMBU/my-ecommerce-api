@@ -1,78 +1,139 @@
-import { Request,Response,NextFunction } from "express";
+import { Request, Response } from "express";
 import Cart from "../models/Cart";
-
-
 import Product from "../models/Product";
+import ProductImage from "../models/ProductImage";
 
-const getCarts = async (req: Request, res:  Response) => {
-  let carts = await Cart.findAll({
-    where: {
-      userId: req.user.id,
-    },
-    include: {
-      model: Product,
-      as: "product",
-    },
-  }); // select * from carts
-  res.send({
-    data: carts,
-  });
-};
-
-const storeCart = async (req: Request, res:  Response) => {
+const getCarts = async (req: Request, res: Response) => {
   try {
-    let cart = await Cart.create({
-      userId: req.user.id,
-      productId: req.body.productId,
-      quantity: req.body.quantity,
+    const carts = await Cart.findAll({
+      where: {
+        userId: req.user.id,
+      },
+      include: {
+        model: Product,
+        as: "product",
+        include: [
+          {
+            model: ProductImage,
+            as: "images",
+          },
+        ],
+      },
     });
 
-    res.send(cart);
+    res.send({
+      data: carts,
+    });
   } catch (err) {
+    console.error("Get cart error:", err);
+
     res.status(500).send({
       msg: "SERVER error",
+      error: err instanceof Error ? err.message : err,
     });
   }
 };
 
-const updateCart = async (req: Request, res:  Response) => {
-  res.send("carts updated");
-  return;
-  // zoi validation
-  console.log(req.params.id);
+const storeCart = async (req: Request, res: Response) => {
+  try {
+    const cart = await Cart.create({
+      userId: req.user.id,
+      productId: req.body.productId,
+      quantity: req.body.quantity || 1,
+    });
 
-  const cart = await Cart.update(
-    {
-      title: req.body.title,
-      price: req.body.price,
-    },
-    {
+    res.send(cart);
+  } catch (err) {
+    console.error("Store cart error:", err);
+
+    res.status(500).send({
+      msg: "SERVER error",
+      error: err instanceof Error ? err.message : err,
+    });
+  }
+};
+
+const updateCart = async (req: Request, res: Response) => {
+  try {
+    const cart = await Cart.update(
+      {
+        quantity: req.body.quantity,
+      },
+      {
+        where: {
+          id: req.params.id,
+          userId: req.user.id,
+        },
+      },
+    );
+
+    res.send({
+      msg: "Cart updated",
+      data: cart,
+    });
+  } catch (err) {
+    console.error("Update cart error:", err);
+
+    res.status(500).send({
+      msg: "SERVER error",
+      error: err instanceof Error ? err.message : err,
+    });
+  }
+};
+
+const deleteCart = async (req: Request, res: Response) => {
+  try {
+    const deleted = await Cart.destroy({
       where: {
         id: req.params.id,
+        userId: req.user.id,
       },
-    },
-  );
+    });
 
-  res.send("cart update");
+    if (!deleted) {
+      return res.status(404).send({
+        msg: "Cart item not found",
+      });
+    }
+
+    res.send({
+      msg: "Cart item removed",
+    });
+  } catch (err) {
+    console.error("Delete cart error:", err);
+
+    res.status(500).send({
+      msg: "SERVER error",
+      error: err instanceof Error ? err.message : err,
+    });
+  }
 };
 
-const deleteCart = async (req: Request, res:  Response) => {
-  console.log("porocuts deleting....");
-  res.send("carts deleted");
-  return;
-  const cart = await Cart.destroy({
-    where: {
-      id: req.params.id,
-    },
-  });
+const clearCart = async (req: Request, res: Response) => {
+  try {
+    await Cart.destroy({
+      where: {
+        userId: req.user.id,
+      },
+    });
 
-  res.send("cart deleted");
+    res.send({
+      msg: "Cart cleared",
+    });
+  } catch (err) {
+    console.error("Clear cart error:", err);
+
+    res.status(500).send({
+      msg: "SERVER error",
+      error: err instanceof Error ? err.message : err,
+    });
+  }
 };
 
-// named export
 export {
   getCarts,
   storeCart,
   updateCart,
   deleteCart,
+  clearCart,
 };
